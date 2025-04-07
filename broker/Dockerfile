@@ -1,33 +1,52 @@
-FROM openjdk:17.0.1-jdk-slim
+FROM apache/kafka:latest
 
-RUN groupadd -r kafka && useradd -r -g kafka kafka
+ENV KAFKA_NODE_ID=2
+ENV KAFKA_PROCESS_ROLES=broker,controller
+ENV KAFKA_LISTENERS='BROKER://:19092,BROKER_HOST://:9092,CONTROLLER://:9093'
+ENV KAFKA_ADVERTISED_LISTENERS='BROKER://broker:19092,BROKER_HOST://broker:9092'
+ENV KAFKA_INTER_BROKER_LISTENER_NAME='BROKER'
+ENV KAFKA_CONTROLLER_LISTENER_NAMES='CONTROLLER'
+ENV KAFKA_LISTENER_SECURITY_PROTOCOL_MAP='CONTROLLER:SASL_SSL,BROKER:SASL_SSL,BROKER_HOST:SASL_SSL'
+ENV KAFKA_CONTROLLER_QUORUM_VOTERS='2@broker:9093'
+ENV KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+ENV KAFKA_SSL_KEYSTORE_LOCATION='etc/kafka/secrets/kafka.keystore.jks'
+ENV KAFKA_SSL_KEYSTORE_PASSWORD=123456
+ENV KAFKA_SSL_KEY_PASSWORD=123456
+ENV KAFKA_SSL_TRUSTSTORE_LOCATION='etc/kafka/secrets/kafka.truststore.jks'
+ENV KAFKA_SSL_TRUSTSTORE_PASSWORD=123456
+ENV KAFKA_SSL_CLIENT_AUTH=required
+ENV KAFKA_SASL_ENABLED_MECHANISMS=GSSAPI
+ENV SECURITY_INTER_BROKER_PROTOCOL='SASL_SSL'
+ENV KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL=GSSAPI
+ENV KAFKA_AUTHORIZER_CLASS_NAME='org.apache.kafka.metadata.authorizer.StandardAuthorizer'
+ENV KAFKA_SUPER_USERS='User:kafka;User:controller'
+ENV KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=false
+ENV KAFKA_SASL_KERBEROS_NAME='kafka'
+ENV KAFKA_SSL_KEYSTORE_FILENAME='kafka.keystore.jks'
+ENV KAFKA_SSL_KEYSTORE_CREDENTIALS='kafka_keystore_creds'
+ENV KAFKA_SSL_KEY_CREDENTIALS='kafka_ssl_key_creds'
+ENV KAFKA_SSL_TRUSTSTORE_FILENAME='kafka.truststore.jks'
+ENV KAFKA_SSL_TRUSTSTORE_CREDENTIALS='kafka_truststore_creds'
+ENV KAFKA_NUM_PARTITIONS=1
+ENV KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+ENV KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+ENV KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+ENV KAFKA_SOCKET_RECEIVE_BUFFER_BYTES=1024000
+ENV KAFKA_SOCKET_SEND_BUFFER_BYTES=1024000
+ENV KAFKA_SOCKET_REQUEST_MAX_BYTES=104857600
+ENV KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES=104857600
+ENV KAFKA_REPLICA_SOCKET_TIMEOUT_MS=60000
+ENV KAFKA_CONTROLLER_SOCKET_TIMEOUT_MS=60000
+ENV KAFKA_MESSAGE_MAX_BYTES=104857600
+ENV KAFKA_MAX_REQUEST_SIZE=104857600
+ENV KAFKA_FETCH_MAX_BYTES=104857600
+ENV KAFKA_OPTS="-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf -Djava.security.krb5.conf=/etc/krb5.conf"
 
-ENV KAFKA_OPTS="--enable-native-access=ALL-UNNAMED -Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf -Djava.security.krb5.conf=/etc/krb5.conf"
-ENV KAFKA_HEAP_OPTS="-Xms10G -Xmx10G"
+USER root
 
-RUN apt-get update && \
-    apt-get install -y \
-    wget \
-    vim \
-    telnet \
-    krb5-user \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* && \
-    mkdir /var/run/sshd
+COPY ./starter-broker.sh /mnt/starter-broker.sh
 
-WORKDIR /opt
-
-RUN wget https://downloads.apache.org/kafka/3.8.0/kafka_2.13-3.8.0.tgz && \
-    tar -xzf kafka_2.13-3.8.0.tgz && \
-    mv kafka_2.13-3.8.0 kafka && \
-    rm kafka_2.13-3.8.0.tgz
-
-COPY ./starter-broker.sh /opt/kafka/bin/starter-broker.sh
-
-RUN chmod +x /opt/kafka/bin/starter-broker.sh && \
-    chown -R kafka:kafka /opt/kafka && \
+RUN chmod +x /mnt/starter-broker.sh
     #chown -R kafka:kafka /kafka
-    
-USER kafka
 
-CMD ["/opt/kafka/bin/starter-broker.sh"]
+CMD ["/mnt/starter-broker.sh"]
