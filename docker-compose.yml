@@ -1,0 +1,185 @@
+version: '2'
+services:
+  # controller:
+  #   image: apache/kafka:latest
+  #   container_name: controller
+  #   hostname: controller
+  #   ports:
+  #     - 9093:9093
+  #   environment:
+  #     KAFKA_NODE_ID: 1
+  #     KAFKA_PROCESS_ROLES: controller
+  #     KAFKA_LISTENERS: CONTROLLER://controller:9093
+  #     INTER_BROKER_LISTENER_NAME: 'BROKER'
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: '1@controller:9093'
+  #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  #     KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.keystore.jks
+  #     KAFKA_SSL_KEYSTORE_PASSWORD: 123456
+  #     KAFKA_SSL_KEY_PASSWORD: 123456
+  #     KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.truststore.jks
+  #     KAFKA_SSL_TRUSTSTORE_PASSWORD: 123456
+  #     KAFKA_SSL_CLIENT_AUTH: required
+  #     KAFKA_SASL_ENABLED_MECHANISMS: GSSAPI
+  #     KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_PLAINTEXT
+  #     KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: GSSAPI
+  #     KAFKA_SASL_KERBEROS_NAME: kafka
+  #     KAFKA_SSL_KEYSTORE_FILENAME: kafka.keystore.jks
+  #     KAFKA_SSL_KEYSTORE_CREDENTIALS: kafka_keystore_creds
+  #     KAFKA_SSL_KEY_CREDENTIALS: kafka_ssl_key_creds
+  #     KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.truststore.jks
+  #     KAFKA_SSL_TRUSTSTORE_CREDENTIALS: kafka_truststore_creds
+  #     KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 1024000
+  #     KAFKA_SOCKET_SEND_BUFFER_BYTES: 1024000
+  #     KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
+  #     KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 104857600
+  #     KAFKA_REPLICA_SOCKET_TIMEOUT_MS: 60000
+  #     KAFKA_CONTROLLER_SOCKET_TIMEOUT_MS: 60000
+  #     KAFKA_MESSAGE_MAX_BYTES: 104857600
+  #     KAFKA_MAX_REQUEST_SIZE: 104857600
+  #     KAFKA_FETCH_MAX_BYTES: 104857600
+  #     KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf -Djava.security.krb5.conf=/etc/krb5.conf"
+  #   volumes:
+  #     - ./certificates/controller/kafka.keystore.jks:/etc/kafka/secrets/kafka.keystore.jks
+  #     - ./certificates/controller/kafka.truststore.jks:/etc/kafka/secrets/kafka.truststore.jks
+  #     - ./certificates/controller/kafka_keystore_creds:/etc/kafka/secrets/kafka_keystore_creds
+  #     - ./certificates/controller/kafka_ssl_key_creds:/etc/kafka/secrets/kafka_ssl_key_creds
+  #     - ./certificates/controller/kafka_truststore_creds:/etc/kafka/secrets/kafka_truststore_creds
+  #     - ./kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+  #     - ./krb_configs/keytabs/kafka-keytabs:/etc/kafka/keytabs
+  #     - ./krb_configs/krb_image/kerberos/config/krb5.conf:/etc/krb5.conf
+  #   networks:
+  #     kafka:
+  #       ipv4_address: 172.18.0.3
+  #   extra_hosts:
+  #     - "broker:172.18.0.4"
+  #     - "kerberos:172.18.0.5"
+
+  broker:
+    image: apache/kafka:latest
+    container_name: broker
+    hostname: broker
+    # build:
+    #   context: ./broker
+    #   dockerfile: Dockerfile
+    ports:
+      - 9092:9092
+      - 9093:9093
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: 'BROKER://:19092,BROKER_HOST://:9092,CONTROLLER://:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'BROKER://broker:19092,BROKER_HOST://broker:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'BROKER'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:SASL_SSL,BROKER:SASL_SSL,BROKER_HOST:SASL_SSL'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '2@broker:9093'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_SSL_KEYSTORE_LOCATION: 'etc/kafka/secrets/kafka.keystore.jks'
+      KAFKA_SSL_KEYSTORE_PASSWORD: 123456
+      KAFKA_SSL_KEY_PASSWORD: 123456
+      KAFKA_SSL_TRUSTSTORE_LOCATION: 'etc/kafka/secrets/kafka.truststore.jks'
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: 123456
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_SASL_ENABLED_MECHANISMS: GSSAPI
+      SECURITY_INTER_BROKER_PROTOCOL: 'SASL_SSL'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: GSSAPI
+      KAFKA_AUTHORIZER_CLASS_NAME: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer'
+      KAFKA_SUPER_USERS: 'User:kafka;User:controller'
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: false
+      KAFKA_SASL_KERBEROS_NAME: 'kafka'
+      KAFKA_SSL_KEYSTORE_FILENAME: 'kafka.keystore.jks'
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: 'kafka_keystore_creds'
+      KAFKA_SSL_KEY_CREDENTIALS: 'kafka_ssl_key_creds'
+      KAFKA_SSL_TRUSTSTORE_FILENAME: 'kafka.truststore.jks'
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: 'kafka_truststore_creds'
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 1024000
+      KAFKA_SOCKET_SEND_BUFFER_BYTES: 1024000
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
+      KAFKA_REPLICA_SOCKET_RECEIVE_BUFFER_BYTES: 104857600
+      KAFKA_REPLICA_SOCKET_TIMEOUT_MS: 60000
+      KAFKA_CONTROLLER_SOCKET_TIMEOUT_MS: 60000
+      KAFKA_MESSAGE_MAX_BYTES: 104857600
+      KAFKA_MAX_REQUEST_SIZE: 104857600
+      KAFKA_FETCH_MAX_BYTES: 104857600
+      
+
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf -Djava.security.krb5.conf=/etc/krb5.conf"
+    volumes:
+      - ./certificates/broker/kafka.keystore.jks:/etc/kafka/secrets/kafka.keystore.jks
+      - ./certificates/broker/kafka.truststore.jks:/etc/kafka/secrets/kafka.truststore.jks
+      - ./certificates/broker/kafka_keystore_creds:/etc/kafka/secrets/kafka_keystore_creds
+      - ./certificates/broker/kafka_ssl_key_creds:/etc/kafka/secrets/kafka_ssl_key_creds
+      - ./certificates/broker/kafka_truststore_creds:/etc/kafka/secrets/kafka_truststore_creds
+      - ./kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+      - ./producer.properties:/opt/kafka/config/producer.properties
+      - ./consumer.properties:/opt/kafka/config/consumer.properties
+      - ./krb_configs/keytabs/kafka-keytabs:/etc/kafka/keytabs
+      - ./krb_configs/krb_image/kerberos/config/krb5.conf:/etc/krb5.conf
+
+    #command: ["/bin/bash", "-c", "nohup /opt/kafka/bin/init-kafka.sh &"]
+    networks:
+      kafka:
+        ipv4_address: 172.18.0.4
+    extra_hosts:
+      # - "controller:172.18.0.3"
+      - "kerberos:172.18.0.5"
+      - "producer-client:172.18.0.6"
+    # depends_on:
+    #   - controller
+
+  
+  
+  kerberos:
+    container_name: kerberos
+    hostname: kerberos
+    user: root
+    build:
+      context: ./krb_configs/krb_image/kerberos/.
+      dockerfile: Dockerfile
+    ports:
+      - "88:88/udp"
+      - "749:749/tcp"
+    expose:
+      - "88"
+      - "749"
+    volumes:
+      - ./krb_configs/logs/kerberos:/var/lib/krb5kdc
+      - ./krb_configs/keytabs/kafka-keytabs:/keytabs/kafka-keytabs
+      - ./krb_configs/keytabs/client-keytabs:/keytabs/client-keytabs
+    networks:
+      kafka:
+        ipv4_address: 172.18.0.5
+    extra_hosts:
+      - "broker:172.18.0.4"
+      - "producer-client:172.18.0.6"
+      # - "controller:172.18.0.3"
+  
+  producer-client:
+    container_name: producer-client
+    hostname: producer-client
+    build:
+      context: ./client/producer/.
+      dockerfile: Dockerfile
+    volumes:
+      - ./client/producer:/mnt/home
+      - ./krb_configs/keytabs/client-keytabs:/mnt/keytabs
+      - ./certificates/broker/ca-cert:/mnt/kafka/secrets/ca-cert
+    networks:
+      kafka:
+        ipv4_address: 172.18.0.6
+    extra_hosts:
+      - "broker:172.18.0.4"
+      - "kerberos:172.18.0.5"
+    depends_on:
+      - kerberos
+
+networks:
+  kafka:
+    driver: bridge
+    name: kafka
+    external: true
